@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-#df = pd.read_csv(r"C:\Users\Proprietaire\Downloads\VO_annonces_2015-ALL_CR\VO_annonces_2015-ALL_CR.csv")
+df = pd.read_csv(r"C:\Users\Proprietaire\Downloads\VO_annonces_2015-ALL_CR\VO_annonces_2015-ALL_CR.csv")
 
 #Lets start by cleaning up the data :
     
@@ -135,9 +135,10 @@ plt.ylabel("Ads taken down")
 misc=len(df_2016)-len(df_real)
 misc
 
+global mean_tts_real
 mean_tts_real=df_real.nb_days.mean(skipna=True)
 print(mean_tts_real)
-mean_tts
+
 
 
 models=pd.DataFrame(df_real.model.unique())
@@ -145,10 +146,51 @@ models=pd.DataFrame(df_real.model.unique())
 tts=[]
 
 tts= df_real.groupby('model')['nb_days'].mean()
-tts=tts.loc['nb_days']
-tts['nb_days']
+
+
 tts=pd.DataFrame(tts)
 tts['nb_days'].nsmallest(10)
+
+
+
+#Let's now create our algorithm 
+
+df_real['model'].value_counts()
+final=df_real['model'].value_counts().nlargest(300)
+final.index
+df_final= df_real[~df_real['model'].isin(final.index)]
+df_final
+
+
+
+
+
+
+
+score=[]
+
+std=np.std(df_final.nb_days)
+
+def getScore (model,mileage,year,price) :
+    score=0
+    score=tts.query(f'model==@model')
+    score=score-mileage+year-price
+    return(score)
+
+days=df_final['nb_days']
+days.min()    
+days.mean()    
+    
+def attractivity (tts) :
+    ttsmax=180
+    ttsmean=85
+    ttsmin=0
+    
+    score= -((tts-mean_tts_real)/std)
+    k=2/(((ttsmax-mean_tts_real)/std)-((ttsmin-mean_tts_real)/std))
+    return(score*k)
+    
+    
 
 import tkinter as tk
 
@@ -166,38 +208,11 @@ entry1 = tk.Entry (root)
 canvas1.create_window(200, 140, window=entry1)
 def getSaleTime ():  
     x1 = entry1.get()
-    rep=tts.query(f'model==@x1')
+    rep=tts.query(f'model==@x1') 
     label1 = tk.Label(root, text=rep)
+    
     canvas1.create_window(200, 230, window=label1)
-button1 = tk.Button(text='Get Results', command=getSaleTime,bg='brown', fg='white', font=('helvetica', 9, 'bold'))
+button1 = tk.Button(root,text='Get Results', command=getSaleTime,bg='brown', fg='white', font=('helvetica', 9, 'bold'))
 canvas1.create_window(200, 180, window=button1)
 
 root.mainloop()
-
-
-#Let's now create our algorithm 
-
-df_real['model'].value_counts()
-final=df_real['model'].value_counts().nlargest(300)
-final.index
-df_final= df_real[~df_real['model'].isin(final.index)]
-
-
-
-score=[]
-
-df_final['score'] = ( (tts['nb_days'] > 5).astype(int)
-                + (df_final['Color'] == 'Red').astype(int) 
-                + (df['Risk'] > 7).astype(int) )
-
-models=pd.DataFrame(df_final.model.unique())
-
-tts=[]
-
-tts= df_final.groupby('model')['nb_days'].mean()
-tts=pd.DataFrame(tts)
-tts=tts.loc['nb_days']
-tts['nb_days']
-
-tts['nb_days'].nsmallest(10)
-
